@@ -2,6 +2,7 @@ import pytest
 from httpx import AsyncClient, ASGITransport
 from app.main import app
 
+
 @pytest.mark.asyncio
 async def test_scan_requirements():
     test_content = b"""
@@ -20,6 +21,7 @@ async def test_scan_requirements():
     assert any(pkg["package"] == "flask" for pkg in data)
     assert all("vulnerabilities" in pkg for pkg in data)
 
+
 @pytest.mark.asyncio
 async def test_list_all_dependencies():
     transport = ASGITransport(app=app)
@@ -34,6 +36,7 @@ async def test_list_all_dependencies():
         assert "project_count" in data[0]
         assert "vulnerable" in data[0]
 
+
 @pytest.mark.asyncio
 async def test_get_dependency_detail():
     # dependency name to test
@@ -45,7 +48,7 @@ async def test_get_dependency_detail():
         await client.post("/projects/", data=data, files=files)
         # Get the dependency details
         response = await client.get("/dependencies/requests")
-    
+
     assert response.status_code == 200
     data = response.json()
     assert data["name"].lower() == "requests"

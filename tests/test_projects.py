@@ -3,6 +3,7 @@ from httpx import AsyncClient, ASGITransport
 from fastapi import status
 from app.main import app
 
+
 @pytest.mark.asyncio
 async def test_create_and_list_projects(tmp_path):
     req_file = tmp_path / "requirements.txt"
@@ -13,7 +14,7 @@ async def test_create_and_list_projects(tmp_path):
             response = await client.post(
                 "/projects/",
                 files={"requirements_file": ("requirements.txt", f, "text/plain")},
-                data={"name": "My Test Project", "description": "Test project"}
+                data={"name": "My Test Project", "description": "Test project"},
             )
         assert response.status_code == status.HTTP_200_OK
         data = response.json()

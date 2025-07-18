@@ -8,29 +8,35 @@ import asyncio
 router = APIRouter()
 osv_client = OSVClient()
 
+
 @router.post("/scan")
 async def scan_requirements(file: UploadFile = File(...)) -> List[Dict]:
     """
-    Upload a requirements.txt file, parse dependencies and query OSV API for vulnerabilities.
+    Upload a requirements.txt file, parse dependencies and query OSV API
+    for vulnerabilities.
     """
     if file.content_type != "text/plain":
-        raise HTTPException(status_code=400, detail="Only text/plain files are accepted")
-    
+        raise HTTPException(
+            status_code=400, detail="Only text/plain files are accepted"
+        )
+
     content = await file.read()
     text = content.decode("utf-8")
-    
+
     dependencies = parse_requirements(text)
-    
+
     # Prepare tasks for async queries to OSV
     async def query_package(pkg):
         name, version = pkg
         vulns = await osv_client.get_vulnerabilities(name, version)
         return {"package": name, "version": version, "vulnerabilities": vulns}
-    
+
     tasks = [query_package(dep) for dep in dependencies]
     results = await asyncio.gather(*tasks)
-    
+
     return results
+
+
 @router.get("/")
 async def list_all_dependencies():
     """
@@ -45,7 +51,7 @@ async def list_all_dependencies():
                 dependency_stats[key] = {
                     "name": dep.name,
                     "projects": set(),
-                    "vulnerable": False
+                    "vulnerable": False,
                 }
             dependency_stats[key]["projects"].add(project.id)
             if dep.vulnerabilities:
@@ -53,11 +59,13 @@ async def list_all_dependencies():
 
     result = []
     for dep in dependency_stats.values():
-        result.append({
-            "name": dep["name"],
-            "project_count": len(dep["projects"]),
-            "vulnerable": dep["vulnerable"]
-        })
+        result.append(
+            {
+                "name": dep["name"],
+                "project_count": len(dep["projects"]),
+                "vulnerable": dep["vulnerable"],
+            }
+        )
 
     return result
 
@@ -72,18 +80,17 @@ async def get_dependency_detail(dependency_name: str):
     for project in projects_db.values():
         for dep in project.dependencies:
             if dep.name.lower() == dependency_name.lower():
-                used_in.append({
-                    "project_id": project.id,
-                    "project_name": project.name,
-                    "version": dep.version,
-                    "vulnerable": bool(dep.vulnerabilities),
-                    "vulnerabilities": dep.vulnerabilities
-                })
+                used_in.append(
+                    {
+                        "project_id": project.id,
+                        "project_name": project.name,
+                        "version": dep.version,
+                        "vulnerable": bool(dep.vulnerabilities),
+                        "vulnerabilities": dep.vulnerabilities,
+                    }
+                )
 
     if not used_in:
         raise HTTPException(status_code=404, detail="Dependency not found")
 
-    return {
-        "name": dependency_name,
-        "used_in": used_in
-    }
+    return {"name": dependency_name, "used_in": used_in}

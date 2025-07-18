@@ -1,9 +1,9 @@
 from fastapi import APIRouter, HTTPException
-from app.models import Project
-from app.routes.projects import projects_db 
-from typing import List
+from app.routes.projects import projects_db
+
 
 router = APIRouter()
+
 
 @router.get("/projects/{project_id}/dependencies")
 async def get_project_dependencies(project_id: str):
@@ -18,15 +18,17 @@ async def get_project_dependencies(project_id: str):
     results = []
     for dep in project.dependencies:
         is_vulnerable = len(dep.vulnerabilities) > 0
-        results.append({
-            "name": dep.name,
-            "version": dep.version,
-            "vulnerable": is_vulnerable,
-            "vulnerabilities": dep.vulnerabilities
-        })
+        results.append(
+            {
+                "name": dep.name,
+                "version": dep.version,
+                "vulnerable": is_vulnerable,
+                "vulnerabilities": dep.vulnerabilities,
+            }
+        )
 
     return {
         "project_id": project_id,
         "project_name": project.name,
-        "dependencies": results
+        "dependencies": results,
     }

@@ -12,16 +12,16 @@ class OSVClient:
         """
         self.base_url = base_url
         self.timeout = timeout
-        self.cache: Dict[Tuple[str, str], List[Dict]] = {} # Cache to store results
+        self.cache: Dict[Tuple[str, str], List[Dict]] = {}  # Cache to store results
 
     async def get_vulnerabilities(self, package_name: str, version: str) -> List[Dict]:
         """
-        Send a POST request to OSV.dev to get vulnerabilities 
-        
+        Send a POST request to OSV.dev to get vulnerabilities
+
         Args:
             package_name (str): The name of the Python package.
             version (str): The specific version.
-        
+
         Returns:
             List[Dict]: A list of vulnerabilities returned by OSV.dev.
         """
@@ -32,14 +32,9 @@ class OSVClient:
             print(f"[CACHE HIT] {key}")
             return cached
 
-
-
         payload = {
             "version": version,
-            "package": {
-                "name": package_name,
-                "ecosystem": "PyPI"
-            }
+            "package": {"name": package_name, "ecosystem": "PyPI"},
         }
 
         try:
@@ -57,25 +52,30 @@ class OSVClient:
             # Handle HTTP errors (e.g., network issue, timeout, 5xx from API)
             print(f"[OSVClient Error] {package_name}=={version} → {e}")
             return []
-        
 
     def format_vulnerabilities(self, vulns: list[dict]) -> list[str]:
-                
+
         def format_one(vuln: dict) -> str:
-            id_ = vuln.get('id', 'N/A')
-            summary = vuln.get('summary', 'No summary')
-            severity = vuln.get('database_specific', {}).get('severity', 'Unknown')
-            published = vuln.get('published', 'Unknown date')
-            affected_versions = ', '.join(vuln.get('affected', [{}])[0].get('versions', [])) if vuln.get('affected') else 'N/A'
-            references = [ref['url'] for ref in vuln.get('references', []) if 'url' in ref]
-            ref_str = '\n'.join(references)
+            id_ = vuln.get("id", "N/A")
+            summary = vuln.get("summary", "No summary")
+            severity = vuln.get("database_specific", {}).get("severity", "Unknown")
+            published = vuln.get("published", "Unknown date")
+            affected_versions = (
+                ", ".join(vuln.get("affected", [{}])[0].get("versions", []))
+                if vuln.get("affected")
+                else "N/A"
+            )
+            references = [
+                ref["url"] for ref in vuln.get("references", []) if "url" in ref
+            ]
+            ref_str = "\n".join(references)
             return (
                 f"ID: {id_}\n"
                 f"Summary: {summary}\n"
                 f"Severity: {severity}\n"
                 f"Published: {published}\n"
                 f"Affected Versions: {affected_versions}\n"
-                f"References:\n{ref_str}\n"
-                + "-"*40
+                f"References:\n{ref_str}\n" + "-" * 40
             )
+
         return [format_one(v) for v in vulns]
