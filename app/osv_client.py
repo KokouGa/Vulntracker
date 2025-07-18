@@ -1,5 +1,5 @@
 import httpx
-from typing import List, Dict
+from typing import List, Dict, Tuple
 
 OSV_API_URL = "https://api.osv.dev/v1/query"
 
@@ -11,6 +11,7 @@ class OSVClient:
         """
         self.base_url = base_url
         self.timeout = timeout
+        self.cache: Dict[Tuple[str, str], List[Dict]] = {} # Cache to store results
 
     async def get_vulnerabilities(self, package_name: str, version: str) -> List[Dict]:
         """
@@ -23,6 +24,13 @@ class OSVClient:
         Returns:
             List[Dict]: A list of vulnerabilities returned by OSV.dev.
         """
+        # Check cache first
+        key = (package_name.lower(), version)
+        if key in self.cache:
+            #print(f"[OSVClient Cache Hit] {package_name}=={version}")
+            return self.cache[key]
+
+
         payload = {
             "version": version,
             "package": {
@@ -36,12 +44,20 @@ class OSVClient:
                 response = await client.post(self.base_url, json=payload)
                 response.raise_for_status()
                 data = response.json()
-                return data.get("vulns", [])
+                vulns = data.get("vulns", [])
+
+                # Cache the result
+                self.cache[key] = vulns
+
+                return vulns
         except httpx.HTTPError as e:
             # Handle HTTP errors (e.g., network issue, timeout, 5xx from API)
             print(f"[OSVClient Error] {package_name}=={version} → {e}")
             return []
+        
+
     def format_vulnerabilities(self, vulns: list[dict]) -> list[str]:
+                
         def format_one(vuln: dict) -> str:
             id_ = vuln.get('id', 'N/A')
             summary = vuln.get('summary', 'No summary')
