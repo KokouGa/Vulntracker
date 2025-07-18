@@ -54,6 +54,6 @@ async def get_all_projects():
 
     for project in projects_db.values():
         is_vulnerable = any(dep.vulnerabilities for dep in project.dependencies)
-        result.append(ProjectWithVuln(**project.dict(), vulnerable=is_vulnerable))
+        result.append(ProjectWithVuln(**project.model_dump(), vulnerable=is_vulnerable))
 
     return result

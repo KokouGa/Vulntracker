@@ -1,4 +1,5 @@
 import httpx
+from app.cache import get_from_cache, set_to_cache
 from typing import List, Dict, Tuple
 
 OSV_API_URL = "https://api.osv.dev/v1/query"
@@ -25,10 +26,12 @@ class OSVClient:
             List[Dict]: A list of vulnerabilities returned by OSV.dev.
         """
         # Check cache first
-        key = (package_name.lower(), version)
-        if key in self.cache:
-            #print(f"[OSVClient Cache Hit] {package_name}=={version}")
-            return self.cache[key]
+        key = f"{package_name.lower().strip()}:{version.strip()}"
+        cached = get_from_cache(key)
+        if cached is not None:
+            print(f"[CACHE HIT] {key}")
+            return cached
+
 
 
         payload = {
@@ -47,7 +50,7 @@ class OSVClient:
                 vulns = data.get("vulns", [])
 
                 # Cache the result
-                self.cache[key] = vulns
+                set_to_cache(key, vulns)
 
                 return vulns
         except httpx.HTTPError as e:
